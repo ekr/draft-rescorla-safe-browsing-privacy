@@ -155,22 +155,80 @@ decide the status of any URL, thus avoiding any URL-dependent queries
 to the server. In addition, it provides a performance benefit because
 the client does not need to round-trip to the server.
 
+## Timeliness
 
+A strict "full hash" design has inferior timeliness properties.
 
+Specifically, because the client need not confirm matches with
+the server, any hashes which are incorrectly added to the list--or
+need to be removed for some other reason--remain until the next
+time the client updates; this creates false positives. By
+contrast, with the current design the client makes its final
+blocklist checks in real time.
 
+This design is also slightly worse for false negatives. Consider
+the following timeline:
 
+~~~
+T0      Database contains X || Y
+T1      Client downloads database
+T2      X || Z added to database
+T3      Client attempts to go to X || Z
+~~~
 
+With the current design, the client will check with the server
+at time T3 and thus will refuse to visit the site. By contrast,
+with a full hash version, the client will check the database
+at T3, find only X || Y, and continue.
 
+Both of these issues can be addressed by having the client
+receive more frequent updates from the server. It may also
+be useful for the server to have a mechanism to publish
+high prioirity updates, for instance by having the client
+poll for them in real-time or by having a publish/subscribe
+type notification channel.
 
-
-
-
-
-
+It is important to note that because none of the client
+actions in this scenario depend on the browsing history,
+it is safe to do them all on a single communication channel,
+even though this allows them to be linked. This is a
+potential issue with alternative designs based on proxies,
+as described in {{proxies}}.
 
 # Alternative Designs
 
+There are two main alternative designs for preventing the
+server from learning the client's queries.
+
 ## Proxies
+
+The obvious approach is to simply use a proxy (e.g.,
+OHAI
+{{?I-D.ietf-ohai-ohttp}} between the client and the
+server, thus concealing the client's IP address. This
+provides good privacy as long as the server and proxy
+do not collude.
+
+However, the queries need to be unlinkable in order to prevent
+situations in which the server determines the client's
+identity from part of its browsing history and then is
+able to link that to some incriminating part of the user's
+activity. This is a particular problem in the context
+of proposals like Safe Browsing v5 in which the client
+performs real-time checks for most URLs (filtered by
+an allow list), and thus the server sees more of the
+user's history.
+
+This requirement for unlinkability makes the use of
+connection-oriented proxies such as MASQUE {{?I-D.ietf-masque-connect-udp}}
+problematic, as a new connection must be initiated for
+each request, which introduces latency. In addition,
+it creates problems for anti-DoS mechanisms which
+depend on giving clients a short-term persistent
+identifier; this allows for the detection of abusivy
+behavior, but also permits linkability during the lifetime
+of the identifier.
+
 
 ## PIR
 
@@ -193,9 +251,15 @@ This document has no IANA actions.
 
 # Hash Length Selection {#hash-size}
 
-[TODO}
+The false positive rate of a system with a b-bit hash is effectively
+2^{-(b-20)}. This suggests that an 80 bit hash (false positive
+rate 2^-60) is enough against a innocuous attacks. However, an attacker
+might be able to search the ~2^60 bit space to find a colliding hash
+and then arrange for that URL to host malware or phishing content,
+thus making a given site unvisitable. This suggests that we want
+something more like 128 bits, which requires >2^100 effort to find
+a value which hashes to a database entry.
 
 # Acknowledgments
 {:numbered="false"}
 
-TODO acknowledge.
