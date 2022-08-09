@@ -48,19 +48,131 @@ author:
 normative:
 
 informative:
-
+  SB:
+       title: "Safe Browsing APIs (v4)"
+       author:
+       -
+         ins: Google
+       target: https://developers.google.com/safe-browsing/v4
 
 --- abstract
 
-TODO Abstract
+The Google Safe Browsing service is used by browsers to determine when
+Web sites are potentially malicious, for instance hosting malware or
+being phishing sites. The current design of the Safe Browsing protocol
+allows the service operator to learn some information about which
+sites the user is visiting. This document describes a design which
+has improved privacy properties.
 
 
 --- middle
 
 # Introduction
 
-TODO Introduction
+At a high level, Safe Browsing works by having a list of blocked
+strings (domain names and URL prefixes) on the Safe Browsing server.
+Prior to visiting a site, the browser checks that the URL and its
+components are not on the list; if present, the browser generates
+an error and aborts navigation. Although the current API {{SB}} exposes
+an endpoint that allows for checking a single string, browsers
+do not check this API because doing so would leak a user's
+browsing history, as the service could build a longitudinal list
+of queries for each IP address.
 
+Instead, the current protocol uses a protocol that provides partial
+Private Information Retrieval (PIR). At a high level, this protocol
+works as follows:
+
+- The server computes a hash of each string and provides the client
+  with a list of unique hash *prefixes*. Typically these prefixes are
+  32 bits long. The clients periodically update the prefix list.
+
+- The client computes the hashes of each string and determines
+  the intersection of the prefixes of its hash prefixes and those
+  provided by the server. Any non-matching hashes are
+  OK to connect to.
+
+- The client sends the set of matching prefixes to the server,
+  which responds with the set of full hashes matching each
+  prefix.
+
+- The client then compares the full (256-bit)  hashes it received to those
+  that it computed and blocks and URLs corresponding to matching
+  prefixes.
+
+This design is intended to minimize the number of times in which
+the client needs to contact the server in order to resolve the
+status of the server.
+
+## Privacy Issues
+
+There are on the order of a million (2^20) strings in the database and
+there are 2^32 possible hash prefixes, so approximately 2^-12 (1/4096)
+hash prefixes corresponds to a blocked entry. This means that about
+1/4096 strings will require a database lookup. Naively, this would mean
+that the server would obtain information about 1/4096 of the URLs
+that a user visits, but the number is probably closer to 1/1000
+because the client queries for prefixes of the URL as well as
+the whole URL; the precise number varies depending on the number
+of components in each URL. Moreover, the server can opt to receive
+information about given sites by spuriously publishing their
+hash prefixes. A full privacy analysis of Safe Browsing is out of scope for
+this document, but it should be clear that these properties
+are not ideal.
+
+## Timeliness Issues
+
+In addition to the privacy issues discussed in the previous section,
+the current Safe Browsing design has suboptimal timeliness properties.
+Specifically, because the client periodically updates the hash
+prefix list, and does not check with the server for non-matching
+hashes, it is possible to have false negative results if the
+hash was added during the update interval. Because phishing
+attacks are often of quite short duration, this has a significant
+impact on the effectiveness of Safe Browsing.
+
+Because the client retrieves the relevant hash blocks for each
+prefix, these are inherently more timely. However, in principle
+if the client caches the result, this can still result in
+incorrect results, for instance, a false negative
+if prefix X is retrieved and then X || Y is added,
+or, a false positive if X is retrieved, yields X || Y,
+and then X || Y is removed.
+
+
+# An Improved Design
+
+The privacy issues described in {{privacy-issues}} result from the
+client needing to contact the server to verify the hash, which is a
+consequence of the 32-bit hash prefix being too short to provide
+precise results. Because the client only contacts the server for
+matching prefixes, this leaks browsing history.
+
+This is easily addressed by having the server provide longer hashes,
+on the order of 128 bits (see {{hash-size}}). This provides an
+immediate improvement in privacy because the client can immediately
+decide the status of any URL, thus avoiding any URL-dependent queries
+to the server. In addition, it provides a performance benefit because
+the client does not need to round-trip to the server.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Alternative Designs
+
+## Proxies
+
+## PIR
 
 # Conventions and Definitions
 
@@ -78,6 +190,10 @@ This document has no IANA actions.
 
 
 --- back
+
+# Hash Length Selection {#hash-size}
+
+[TODO}
 
 # Acknowledgments
 {:numbered="false"}
