@@ -195,6 +195,10 @@ even though this allows them to be linked. This is a
 potential issue with alternative designs based on proxies,
 as described in {{proxies}}.
 
+## Bandwidth Comparison
+
+[TODO: how does this compare to SB now?]
+
 # Alternative Designs
 
 There are two main alternative designs for preventing the
@@ -231,6 +235,12 @@ of the identifier.
 
 
 ## PIR
+
+An alternative approach is to perform each request over
+a Private Information Retrieval (PIR) protocol. Unfortunately,
+effective PIR protocols have much higher bandwidth and computational
+costs than the existing design. [TODO: Wood]
+
 
 # Conventions and Definitions
 
