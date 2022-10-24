@@ -57,11 +57,14 @@ informative:
 
 --- abstract
 
-The Google Safe Browsing service is used by browsers to determine when
-Web sites are potentially malicious, for instance hosting malware or
-being phishing sites. The current design of the Safe Browsing protocol
-allows the service operator to learn some information about which
-sites the user is visiting. This document describes a design which
+The Google Safe Browsing service is used by browsers to identify
+potentially malicious web sites, for example, sites that distribute
+malware or that are part of a phishing campaign. Browsers may warn users
+before allowing navigation to a site that is flagged by the Safe
+Browsing service, or take other steps to reduce the chance that a user
+is harmed by a malicious site. The current design of the Safe Browsing
+protocol allows the service operator to learn some information about
+which sites the user is visiting. This document describes a design which
 has improved privacy properties.
 
 
@@ -72,10 +75,10 @@ has improved privacy properties.
 At a high level, Safe Browsing works by having a list of blocked
 strings (domain names and URL prefixes) on the Safe Browsing server.
 Prior to visiting a site, the browser checks that the URL and its
-components are not on the list; if present, the browser generates
+components are not on the list; if the URL is on the list, the browser generates
 an error and aborts navigation. Although the current API {{SB}} exposes
 an endpoint that allows for checking a single string, browsers
-do not check this API because doing so would leak a user's
+do not use this API because doing so would leak a user's
 browsing history, as the service could build a longitudinal list
 of queries for each IP address.
 
@@ -83,26 +86,28 @@ Instead, the current protocol uses a protocol that provides partial
 Private Information Retrieval (PIR). At a high level, this protocol
 works as follows:
 
-- The server computes a hash of each string and provides the client
+- The server computes a hash of each blocked string and provides the client
   with a list of unique hash *prefixes*. Typically these prefixes are
   32 bits long. The clients periodically update the prefix list.
 
-- The client computes the hashes of each string and determines
-  the intersection of the prefixes of its hash prefixes and those
-  provided by the server. Any non-matching hashes are
-  OK to connect to.
+- The client computes the hashes of each string to be queried in the
+  Safe Browsing list, and determines whether the prefix of any of those
+  hashes appears on the list provided by the Safe Browsing server. Any
+  hash prefixes that do not appear on the server's list are OK to connect
+  to.
 
-- The client sends the set of matching prefixes to the server,
+- The client sends the set of prefixes that did appear on the list to the server,
   which responds with the set of full hashes matching each
   prefix.
 
-- The client then compares the full (256-bit)  hashes it received to those
-  that it computed and blocks and URLs corresponding to matching
-  prefixes.
+- The client then determines whether the full (256-bit) hashes of its
+  query strings appear in the set of full hashes received from the server.
+  Any that match are treated as flagged by the Safe Browsing service.
 
-This design is intended to minimize the number of times in which
-the client needs to contact the server in order to resolve the
-status of the server.
+This design reduces the number of times that clients must contact the
+server in order to determine the Safe Browsing status of a site, while
+also avoiding the cost of keeping a full copy of the list of blocked
+strings at each client.
 
 ## Privacy Issues
 
@@ -131,9 +136,9 @@ hash was added during the update interval. Because phishing
 attacks are often of quite short duration, this has a significant
 impact on the effectiveness of Safe Browsing.
 
-Because the client retrieves the relevant hash blocks for each
-prefix, these are inherently more timely. However, in principle
-if the client caches the result, this can still result in
+Because the client retrieves the full-length hashes for each
+matched prefix, these results are inherently more timely. However, in principle
+if the client caches the full-length hashes, this can still manifest
 incorrect results, for instance, a false negative
 if prefix X is retrieved and then X || Y is added,
 or, a false positive if X is retrieved, yields X || Y,
@@ -229,7 +234,7 @@ problematic, as a new connection must be initiated for
 each request, which introduces latency. In addition,
 it creates problems for anti-DoS mechanisms which
 depend on giving clients a short-term persistent
-identifier; this allows for the detection of abusivy
+identifier; this allows for the detection of abusive
 behavior, but also permits linkability during the lifetime
 of the identifier.
 
@@ -263,7 +268,7 @@ This document has no IANA actions.
 
 The false positive rate of a system with a b-bit hash is effectively
 2^{-(b-20)}. This suggests that an 80 bit hash (false positive
-rate 2^-60) is enough against a innocuous attacks. However, an attacker
+rate 2^-60) is sufficient assuming only random collisions. However, an attacker
 might be able to search the ~2^60 bit space to find a colliding hash
 and then arrange for that URL to host malware or phishing content,
 thus making a given site unvisitable. This suggests that we want
