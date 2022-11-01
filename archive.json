@@ -1,0 +1,83 @@
+{
+  "magic": "E!vIA5L86J2I",
+  "timestamp": "2022-11-01T00:35:13.261813+00:00",
+  "repo": "ekr/draft-rescorla-safe-browsing-privacy",
+  "labels": [
+    {
+      "name": "bug",
+      "description": "Something isn't working",
+      "color": "d73a4a"
+    },
+    {
+      "name": "documentation",
+      "description": "Improvements or additions to documentation",
+      "color": "0075ca"
+    },
+    {
+      "name": "duplicate",
+      "description": "This issue or pull request already exists",
+      "color": "cfd3d7"
+    },
+    {
+      "name": "enhancement",
+      "description": "New feature or request",
+      "color": "a2eeef"
+    },
+    {
+      "name": "good first issue",
+      "description": "Good for newcomers",
+      "color": "7057ff"
+    },
+    {
+      "name": "help wanted",
+      "description": "Extra attention is needed",
+      "color": "008672"
+    },
+    {
+      "name": "invalid",
+      "description": "This doesn't seem right",
+      "color": "e4e669"
+    },
+    {
+      "name": "question",
+      "description": "Further information is requested",
+      "color": "d876e3"
+    },
+    {
+      "name": "wontfix",
+      "description": "This will not be worked on",
+      "color": "ffffff"
+    }
+  ],
+  "issues": [],
+  "pulls": [
+    {
+      "number": 1,
+      "id": "PR_kwDOHxR8j85BcZbX",
+      "title": "minor edits",
+      "url": "https://github.com/ekr/draft-rescorla-safe-browsing-privacy/pull/1",
+      "state": "MERGED",
+      "author": "ekr",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2022-10-24T20:15:20Z",
+      "updatedAt": "2022-10-24T20:15:28Z",
+      "baseRepository": "ekr/draft-rescorla-safe-browsing-privacy",
+      "baseRefName": "main",
+      "baseRefOid": "75e78c739486098ef702a996eb4cac77a60e13ae",
+      "headRepository": "ekr/draft-rescorla-safe-browsing-privacy",
+      "headRefName": "andy-edits",
+      "headRefOid": "8ab6d8617615a625dc8e0219651bd173bd358f11",
+      "closedAt": "2022-10-24T20:15:28Z",
+      "mergedAt": "2022-10-24T20:15:28Z",
+      "mergedBy": "ekr",
+      "mergeCommit": {
+        "oid": "47ddd2fae716cda6425ff77324adf5bd8ea1a579"
+      },
+      "comments": [],
+      "reviews": []
+    }
+  ]
+}
