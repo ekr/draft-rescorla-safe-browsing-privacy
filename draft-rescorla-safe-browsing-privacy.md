@@ -144,6 +144,55 @@ if prefix X is retrieved and then X || Y is added,
 or, a false positive if X is retrieved, yields X || Y,
 and then X || Y is removed.
 
+# Measuring Safe Browsing Privacy
+
+Ideally, safe browsing queries could be served in a way that provides
+information-theoretic security, meaning no information at all about
+browsing history is revealed to the server, or in a way that provides
+computational security, meaning a computationally-bounded server cannot
+learn anything about the browsing history. However, it may be
+significantly easier to implement a scheme in which the server learns a
+bounded, small amount of information about the browsing history.
+Deciding whether a given query reveals a "small" amount of information
+is difficult. Learning specific sites that a user has or is very likely
+to have visited, is probably more than a "small" amount of information.
+Being able to infer probabilities of the user having visited sites that
+are close, but not identical, to the probabilities of an average user
+having visited those sites, might be considered a "small" amount of
+infomation. Differential privacy [cite] provides one framework for
+assessing how much information is revealed. [Toledo et al.] analyze
+several PIR schemes in the framework of differential privacy. However,
+while differential privacy provides a framework for analysis, it does
+not establish the amount of information leakage that is acceptable in
+any particular application.
+
+[TODO: Discuss epsilon and delta, and the impact of zero-probability
+events on achievable values thereof?]
+
+If the probability that a random internet user has visited a particular
+site is $10^{-6}$, and the probability that a user who has made a certain
+query to the safe browsing server has visited that site is $10^{-4}$, is
+that a meaningful loss of privacy? What if the probability that
+a random internet user has visited a particular site is $10^{-2}$, and that
+increases to 0.99 for users who have made a particular safe browsing
+query?
+
+The existing "dummy requests" scheme implemented in Firefox for safe
+browsing queries is subject to this kind of distortion. Safe browsing
+records associated with very popular sites will be requested much more
+frequently due to actual navigation to the popular site, than they will
+due to random selection for a dummy request. An open question is the
+extent to which any amount of "plausible deniability" is sufficient.
+That is, if there is any chance, no matter how small, that a particular
+safe browsing lookup does not indicate actual browsing activity, does
+that provide sufficient privacy for safe browsing requests?
+
+[De Blasio] describes a scheme for SCT auditing in Chrome that provides
+a level of privacy by requesting blocks of SCT hashes. It is said to be
+providing k-anonymity, but in the strictest sense of the term that may
+not be true -- there are a total of k records that could be the record
+of interest, but there are not necessarily k users making the same
+set of requests.
 
 # An Improved Design
 
@@ -246,6 +295,39 @@ a Private Information Retrieval (PIR) protocol. Unfortunately,
 effective PIR protocols have much higher bandwidth and computational
 costs than the existing design. [TODO: Wood]
 
+Table 2 in [CG19] provides an overview of known PIR protocols for both
+the single-server and two-server cases. The best known protocols have
+$O(\sqrt{n})$ online server computation, but require amortizing offline
+(preparatory) computation over many queries to achieve that. Depending
+on the rate of change of the safe browsing database, these schemes may
+not be applicable. For the fully online case, [GI14] has $O(n)$ online
+computation and $O(\log n)$ communication.
+
+The techniques of [BIM04] can trade reduced online server computation
+for increased server storage. Given the modest size of the safe browsing
+database, these schemes may be useful.
+
+A hybrid approach like the following may be viable for queries to a safe
+browsing database with $O(10^6)$ records:
+
+* The safe browsing database is divided into $O(250)$ buckets. Most sites
+  are assigned to one of these buckets using a hash. Each lookup leaks
+  which bucket it is searching. As long as sufficiently many and varied
+  sites are assigned to each bucket, this leakage may be deemed acceptable.
+  Popular sites are replicated in every bucket, and may be looked up in
+  any bucket at the client's discretion, thus leaking nothing.
+
+* Within each bucket, a PIR scheme is used to search the $O(4 \times 10^3)$
+  records assigned to that bucket.
+
+Based on data that most phishing sites are active for less than 10
+minutes [Cite private specification], it is assumed that offline-online
+PIR schemes do not apply well for this purpose. However, a more thorough
+analysis of the safe browsing database would be informative. If the safe
+browsing database can be divided into short- and long-term subsets, and
+the long-term subset makes up the bulk of the data, then using
+offline-online PIR for the long-term data might provide meaningful gains
+in efficiency.
 
 # Conventions and Definitions
 
