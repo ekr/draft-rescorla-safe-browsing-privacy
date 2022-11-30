@@ -300,8 +300,10 @@ the single-server and two-server cases. The best known protocols have
 $O(\sqrt{n})$ online server computation, but require amortizing offline
 (preparatory) computation over many queries to achieve that. Depending
 on the rate of change of the safe browsing database, these schemes may
-not be applicable. For the fully online case, [GI14] has $O(n)$ online
-computation and $O(\log n)$ communication.
+not be applicable. [MZRA22] adapts the [CG19] scheme for dynamic
+databases, but in a way that does not apply to PIR-by-keywords. For the
+fully online case, [GI14] has $O(n)$ online computation and $O(\log n)$
+communication.
 
 The techniques of [BIM04] can trade reduced online server computation
 for increased server storage. Given the modest size of the safe browsing
