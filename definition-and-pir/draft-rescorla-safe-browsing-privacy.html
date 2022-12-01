@@ -17,18 +17,17 @@ protocol allows the service operator to learn some information about
 which sites the user is visiting. This document describes a design which
 has improved privacy properties. 
     " name="description">
-<meta content="xml2rfc 3.15.1" name="generator">
+<meta content="xml2rfc 3.15.2" name="generator">
 <meta content="draft-rescorla-safe-browsing-privacy-latest" name="ietf.draft">
 <!-- Generator version information:
-  xml2rfc 3.15.1
-    Python 3.10.5
+  xml2rfc 3.15.2
+    Python 3.10.8
     appdirs 1.4.4
     ConfigArgParse 1.5.3
     google-i18n-address 2.5.2
     html5lib 1.1
     intervaltree 3.1.0
     Jinja2 3.1.2
-    kitchen 1.2.6
     lxml 4.9.1
     MarkupSafe 2.1.1
     pycountry 22.3.5
@@ -36,6 +35,7 @@ has improved privacy properties.
     requests 2.27.1
     setuptools 59.4.0
     six 1.16.0
+    wcwidth 0.2.5
 -->
 <link href="draft-rescorla-safe-browsing-privacy.xml" rel="alternate" type="application/rfc+xml">
 <link href="#copyright" rel="license">
@@ -1042,11 +1042,11 @@ svg :is([stroke="fill"], [fill^="#fff"]) {
 <thead><tr>
 <td class="left">Internet-Draft</td>
 <td class="center">Privacy for Safe Browsing</td>
-<td class="right">November 2022</td>
+<td class="right">December 2022</td>
 </tr></thead>
 <tfoot><tr>
 <td class="left">Rescorla</td>
-<td class="center">Expires 5 May 2023</td>
+<td class="center">Expires 4 June 2023</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1059,12 +1059,12 @@ svg :is([stroke="fill"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-rescorla-safe-browsing-privacy-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2022-11-01" class="published">1 November 2022</time>
+<time datetime="2022-12-01" class="published">1 December 2022</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2023-05-05">5 May 2023</time></dd>
+<dd class="expires"><time datetime="2023-06-04">4 June 2023</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1121,7 +1121,7 @@ has improved privacy properties.<a href="#section-abstract-1" class="pilcrow">¶
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 5 May 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 4 June 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1183,6 +1183,14 @@ has improved privacy properties.<a href="#section-abstract-1" class="pilcrow">¶
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
                 <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-pir" class="internal xref">PIR</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-partial-pir" class="internal xref">Partial PIR</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-hybrid-pir" class="internal xref">Hybrid PIR</a></p>
+</li>
+                </ul>
 </li>
             </ul>
 </li>
@@ -1415,7 +1423,17 @@ as described in <a href="#proxies" class="auto internal xref">Section 4.1</a>.<a
         <h3 id="name-bandwidth-comparison">
 <a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-bandwidth-comparison" class="section-name selfRef">Bandwidth Comparison</a>
         </h3>
-<p id="section-3.2-1">[TODO: how does this compare to SB now?]<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-1">[KC20] provides some figures for the storage and data transfer costs of
+various safe browsing schemes. For the existing safe browsing
+implementation, the client's database size is 4.3 MB and the ongoing
+data transfer to each client is 3.0 MB/month. To maintain a database at
+the client containing complete hashes would increase the client's
+database size to 91.8 MB, and the monthly data transfer to 13.2 MB.
+The "Checklist" PIR scheme described in [KC20] requires a client database
+of 24.5 MB, and monthly data transfer of 9.8 MB. (Unlike the non-PIR
+schemes, the initial server-to-client data transfer in this case is
+roughly 50% of the final client database size. For the non-PIR schemes,
+the initial transfer size is comparable to the database size.)<a href="#section-3.2-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -1472,33 +1490,72 @@ the single-server and two-server cases. The best known protocols have
 $O(\sqrt{n})$ online server computation, but require amortizing offline
 (preparatory) computation over many queries to achieve that. Depending
 on the rate of change of the safe browsing database, these schemes may
-not be applicable. For the fully online case, [GI14] has $O(n)$ online
-computation and $O(\log n)$ communication.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+not be applicable. [MZRA22] adapts the [CG19] scheme for dynamic
+databases, but in a way that does not apply to PIR-by-keywords. For the
+fully online case, [GI14] has $O(n)$ online computation and $O(\log n)$
+communication.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
 <p id="section-4.2-3">The techniques of [BIM04] can trade reduced online server computation
 for increased server storage. Given the modest size of the safe browsing
 database, these schemes may be useful.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
-<p id="section-4.2-4">A hybrid approach like the following may be viable for queries to a safe
-browsing database with $O(10^6)$ records:<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+<div id="partial-pir">
+<section id="section-4.2.1">
+          <h4 id="name-partial-pir">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-partial-pir" class="section-name selfRef">Partial PIR</a>
+          </h4>
+<p id="section-4.2.1-1">An approach that provides "partially private information retrieval" like
+the following may be viable for queries to a safe browsing database with
+$O(10^6)$ records:<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-4.2-5.1">The safe browsing database is divided into $O(250)$ buckets. Most sites
+<li class="normal" id="section-4.2.1-2.1">The safe browsing database is divided into $O(250)$ buckets. Most sites
 are assigned to one of these buckets using a hash. Each lookup leaks
 which bucket it is searching. As long as sufficiently many and varied
 sites are assigned to each bucket, this leakage may be deemed acceptable.
 Popular sites are replicated in every bucket, and may be looked up in
-any bucket at the client's discretion, thus leaking nothing.<a href="#section-4.2-5.1" class="pilcrow">¶</a>
+any bucket at the client's discretion, thus leaking nothing.<a href="#section-4.2.1-2.1" class="pilcrow">¶</a>
 </li>
-          <li class="normal" id="section-4.2-5.2">Within each bucket, a PIR scheme is used to search the $O(4 \times 10^3)$
-records assigned to that bucket.<a href="#section-4.2-5.2" class="pilcrow">¶</a>
+            <li class="normal" id="section-4.2.1-2.2">Within each bucket, a PIR scheme is used to search the $O(4 \times 10^3)$
+records assigned to that bucket.<a href="#section-4.2.1-2.2" class="pilcrow">¶</a>
 </li>
-        </ul>
-<p id="section-4.2-6">Based on data that most phishing sites are active for less than 10
-minutes [Cite private specification], it is assumed that offline-online
-PIR schemes do not apply well for this purpose. However, a more thorough
-analysis of the safe browsing database would be informative. If the safe
-browsing database can be divided into short- and long-term subsets, and
-the long-term subset makes up the bulk of the data, then using
-offline-online PIR for the long-term data might provide meaningful gains
-in efficiency.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
+          </ul>
+</section>
+</div>
+<div id="hybrid-pir">
+<section id="section-4.2.2">
+          <h4 id="name-hybrid-pir">
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-hybrid-pir" class="section-name selfRef">Hybrid PIR</a>
+          </h4>
+<p id="section-4.2.2-1">The current size of the safe browsing database is approximately three million
+32-bit prefixes. Each day, around ten thousand prefixes are added to
+the database, and around ten thousand prefixes are removed from the database.
+Only around 7% of prefixes added to the database are removed within 7 days.
+Around 40% of removals each day happen between 5 and 7 AM PDT which could
+reflect a batch process, or could be a start-of-day effect.<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2.2-2">This suggests a hybrid approach for querying the safe browsing database. For
+each lookup, queries are made over two databases:<a href="#section-4.2.2-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.2-3.1">One database contains the full safe browsing database, and is updated
+daily. This database would contain $O(10^6)$ records, and would be
+queried with the offline/online PIR scheme of [CG19].<a href="#section-4.2.2-3.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.2.2-3.2">The second database contains a representation of the changes to the safe
+browsing database since the most recent daily snapshot. This database
+would contain $O(10^4)$ records, and would be queried with a
+DPF-based PIR. Because 40% of removals occur in a restricted time window, and
+removals in general may not be time sensitive, it may be possible to exclude
+some removals from this database.<a href="#section-4.2.2-3.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-4.2.2-4">Rather than distribute fresh hints for the large database each day, it
+may be easier to distribute the full detail of changes to the database
+and let the client update its hints accordingly. Because the client does
+not maintain a full copy of the database, full hashes of both additions
+and removals would need to be distributed, for an estimated cost of 26
+MB/month (i.e. approximately double the cost of incremental updates of a
+full database). Compared with Checklist, which maintains a series of
+exponentially growing buckets, the client database size and initial
+transfer might be reduced by approximately 50% in this scheme.<a href="#section-4.2.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
 </section>
 </div>
 </section>
