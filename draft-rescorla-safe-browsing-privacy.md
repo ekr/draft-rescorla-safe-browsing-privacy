@@ -251,7 +251,17 @@ as described in {{proxies}}.
 
 ## Bandwidth Comparison
 
-[TODO: how does this compare to SB now?]
+[KC20] provides some figures for the storage and data transfer costs of
+various safe browsing schemes. For the existing safe browsing
+implementation, the client's database size is 4.3 MB and the ongoing
+data transfer to each client is 3.0 MB/month. To maintain a database at
+the client containing complete hashes would increase the client's
+database size to 91.8 MB, and the monthly data transfer to 13.2 MB.
+The "Checklist" PIR scheme described in [KC20] requires a client database
+of 24.5 MB, and monthly data transfer of 9.8 MB. (Unlike the non-PIR
+schemes, the initial server-to-client data transfer in this case is
+roughly 50% of the final client database size. For the non-PIR schemes,
+the initial transfer size is comparable to the database size.)
 
 # Alternative Designs
 
@@ -309,8 +319,11 @@ The techniques of [BIM04] can trade reduced online server computation
 for increased server storage. Given the modest size of the safe browsing
 database, these schemes may be useful.
 
-A hybrid approach like the following may be viable for queries to a safe
-browsing database with $O(10^6)$ records:
+### Partial PIR
+
+An approach that provides "partially private information retrieval" like
+the following may be viable for queries to a safe browsing database with
+$O(10^6)$ records:
 
 * The safe browsing database is divided into $O(250)$ buckets. Most sites
   are assigned to one of these buckets using a hash. Each lookup leaks
@@ -322,14 +335,38 @@ browsing database with $O(10^6)$ records:
 * Within each bucket, a PIR scheme is used to search the $O(4 \times 10^3)$
   records assigned to that bucket.
 
-Based on data that most phishing sites are active for less than 10
-minutes [Cite private specification], it is assumed that offline-online
-PIR schemes do not apply well for this purpose. However, a more thorough
-analysis of the safe browsing database would be informative. If the safe
-browsing database can be divided into short- and long-term subsets, and
-the long-term subset makes up the bulk of the data, then using
-offline-online PIR for the long-term data might provide meaningful gains
-in efficiency.
+### Hybrid PIR
+
+The current size of the safe browsing database is approximately three million
+32-bit prefixes. Each day, around ten thousand prefixes are added to
+the database, and around ten thousand prefixes are removed from the database.
+Only around 7% of prefixes added to the database are removed within 7 days.
+Around 40% of removals each day happen between 5 and 7 AM PDT which could
+reflect a batch process, or could be a start-of-day effect.
+
+This suggests a hybrid approach for querying the safe browsing database. For
+each lookup, queries are made over two databases:
+
+* One database contains the full safe browsing database, and is updated
+  daily. This database would contain $O(10^6)$ records, and would be
+  queried with the offline/online PIR scheme of [CG19].
+
+* The second database contains a representation of the changes to the safe
+  browsing database since the most recent daily snapshot. This database
+  would contain $O(10^4)$ records, and would be queried with a
+  DPF-based PIR. Because 40% of removals occur in a restricted time window, and
+  removals in general may not be time sensitive, it may be possible to exclude
+  some removals from this database.
+
+Rather than distribute fresh hints for the large database each day, it
+may be easier to distribute the full detail of changes to the database
+and let the client update its hints accordingly. Because the client does
+not maintain a full copy of the database, full hashes of both additions
+and removals would need to be distributed, for an estimated cost of 26
+MB/month (i.e. approximately double the cost of incremental updates of a
+full database). Compared with Checklist, which maintains a series of
+exponentially growing buckets, the client database size and initial
+transfer might be reduced by approximately 50% in this scheme.
 
 # Conventions and Definitions
 
